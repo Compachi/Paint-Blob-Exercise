@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<!--    Kyle Lessnau CS4500 HW2 due 1/28/2016 
+		This paint blob program is the visual representation of the same problem presented in Homework 1.
+		A random spot is chosen on a 10x10 grid to be painted. This process is repeated until the 
+		whole grid has been painted. Variables are used to keep track of the total number of paint 
+		drops along with the max amount of paint drops found within one of the grid spaces.  -->
+
+<html>
+	<title>Kyle Lessnau</title>
+	<body>
+		<p>
+			<h2>CS4500</h2> 
+			<h3>Homework 2: The Paint Blob Exercise Revisited</h3>
+			<input type="button" value="Start" onclick="main();">
+			<!-- Display for the Total Paint Drops and the Max Depth -->
+			<h4>Total Paint Drops: <label id="currentCount"></label> of <label id="count"></label></h4>
+			<h4>Current Max Depth: <label id="currentDepth"></label>
+			<h4>Final Max Depth: <label id="maxDepth"></label></h4>
+		</p>
+
+		<!-- Sets up canvas  -->
+		<canvas id="myCanvas" width="500" height="500" style="border:5px solid #c3c3c3;">
+		Your browser does not support the HTML5 canvas tag.
+		</canvas>
+<script>
+//Draws a white rectangle within canvas
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+ctx.fillStyle = "#FFFFFF";
+ctx.fillRect(0,0,500,500);
+	
+//Variables to keep track of total paint count and the max depth and if grid is painted 
+var count = 0;
+var currentCount = 0;
+var currentDepth = 0;
+var maxDepth = 0;
+var isEmpty = true;
+	
+//Grid space object includes grid coordinates, depth, and color. Red is not included because it will be the constant color that doesn't get altered.
+var space = function(x, y) {
+	this.xPos = 0;
+	this.yPos = 0;
+	this.depth = 0;
+	this.painted = 0;
+	this.red = 40;
+	this.blue = 255;
+	this.green = 240;
+};
+
+//Creates 2D array of grid spaces
+var grid = [];
+for (var i = 0; i < 10; i++) {
+	grid[i] = []		
+	for (var j = 0; j < 10; j++) {
+		grid[i][j] = new space(i, j);
+		//For position on canvas
+		grid[i][j].xPos = i * 50;
+		grid[i][j].yPos = j * 50;
+	}
+}
+
+//Object which will hold coordinates of random positions of our grid in the order that they will be painted.
+var order = function(x, y) {
+	this.xPos = x;
+	this.yPos = y;
+}
+//Array will hold grid spaces in the order that they will be painted.
+var paint = [];
+
+//Function will calculate the total number of paint blobs needed to completely paint the canvas. Count variable is incremented and 
+//then a random grid space is chosen to be filled by increasing its depth. Once the depth is incremented, the grid space is pushed into
+//a new array to represent the order in which the grid will be painted. Once the grid space object is pushed into the new array, the checkGrid()
+//function is called to see if the grid contains any empty spaces by checking the depth.
+while(isEmpty == true) {
+	var i = 0;
+	count++;
+	//Chooses random coordinates
+	var x = Math.floor(Math.random() * 10);
+	var y = Math.floor(Math.random() * 10);
+	
+	//Increases depth and calculates new maxDepth (if necessary)
+	grid[x][y].depth++;
+	if(grid[x][y].depth > maxDepth) 
+		maxDepth = grid[x][y].depth;
+		
+	//A new paint order object is created and pushed into our paint[] array.
+	paint.push(new order(x, y));
+	//Checks for empty spaces in grid
+	isEmpty = checkGrid();
+	//incremented for our next painted grid space
+	i++;
+}
+
+//Function will check for empty spaces in the grid. If an empty space is found, the variable emptyCount
+//will be incremented. At the end of the nested for loops, if the emptyCount is greater than 0, that means
+//there is an empty grid space and will return true to while loop above.
+function checkGrid() {
+	var emptyCount = 0;
+	for(var i = 0; i < 10; i++)
+		for(var j = 0; j < 10; j++)
+			if(grid[i][j].depth == 0)
+				emptyCount++;
+	//Will return true is there are still empty spaces. Else returns false.			
+	if(emptyCount > 0)
+		return true;
+	else
+		return false;
+}
+
+//Function will paint canvas.
+var makerCount = 0;
+function spotMaker() {
+		var x = paint[makerCount].xPos;
+		var y = paint[makerCount].yPos;
+		
+		//Counter variables to increment the number of times the canvas has been painted and to
+		//change the coordinates of the grid space for the next iteration. Also increments that the grid space has been painted.
+		makerCount++;
+		currentCount++;
+		grid[x][y].painted++;
+		
+		//Keeps track of current depth
+		if(grid[x][y].painted > currentDepth)
+			currentDepth = grid[x][y].painted;
+		
+
+		//Output of the current depth and the current paint count for the HTML
+		document.getElementById("currentDepth").innerHTML=currentDepth;
+		document.getElementById("currentCount").innerHTML=currentCount;
+	
+		//Grid space is filled 
+		ctx.fillStyle = "rgb("+ grid[x][y].red +", "+ grid[x][y].blue +", "+ grid[x][y].green + ")";
+		ctx.fillRect(grid[x][y].xPos, grid[x][y].yPos, 48, 48);
+		
+		//Once grid space is filled, the color will be darkened next time it is painted to show depth. The main
+		//color I'm altering is the blue hue. So if that reaches 0, the color becomes black. This will work for all count sizes.
+		//If you need to test it, you can hit the start button on the HTML page as many times as you'd like. Eventually, the entire canvas 
+		//will be black
+		if(grid[x][y].blue > 0) {
+			//I chose fifteen because that allows one grid space to be painted 17 times before the entire grid space is painted black.
+			//Bases on past executions of HW1, while possible, it is rare that we'll see a max depth of 17 with a 10x10 grid.
+			grid[x][y].blue -= 15;
+			grid[x][y].green -= 3;
+		}
+		else {
+			grid[x][y].blue = 0;
+			grid[x][y].green = 0;
+			grid[x][y].red = 0;
+		}
+}
+
+//Main function to call spotMaker(). Only executed after user hits start button.
+function main() {
+	//Calls spotMaker 'count' times to paint the canvas. Output also included for total paint count and the final max depth.
+	for (var i = 0; i < count; i++){
+		document.getElementById("count").innerHTML=count;
+		document.getElementById("maxDepth").innerHTML=maxDepth;
+		setTimeout("spotMaker(count)",(i*75));
+	}
+}
+</script>
+</body>
+</html>
